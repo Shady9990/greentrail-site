@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GreenTrail — Mobile/Desktop Preview (All-in-One)</title>
+  <style>
+    /* --- Preview controls & device frame --- */
+    :root{ --ink:#111; --line:#d7d7d7; --bg:#f5f5f7; --accent:#111; }
+    *{ box-sizing:border-box }
+    body{ margin:0; font-family:system-ui, Segoe UI, Roboto, Arial, Helvetica, sans-serif; color:var(--ink); background:var(--bg) }
+
+    .bar{ border-bottom:1px solid var(--line); background:#fff }
+    .bar .inner{
+      max-width:1100px; margin:0 auto; padding:12px 16px;
+      display:grid; grid-template-columns:1fr auto auto; gap:10px; align-items:center;
+    }
+    h1{ margin:0; font-size:16px; font-weight:700 }
+    .tabs, .modes{ display:flex; gap:6px; flex-wrap:wrap }
+    .btn{ border:1px solid var(--line); background:#fff; padding:6px 10px; border-radius:8px; cursor:pointer; font-weight:600 }
+    .btn.active{ outline:2px solid var(--accent) }
+
+    .stage{ display:grid; place-items:center; min-height:calc(100dvh - 66px); padding:16px }
+    .frame{
+      background:#fff; border:1px solid var(--line); border-radius:16px; overflow:hidden;
+      display:grid; grid-template-rows:auto 1fr auto; gap:0; position:relative;
+      box-shadow:0 6px 22px rgba(0,0,0,.08);
+    }
+    /* Default = Mobile */
+    .frame.mobile{ width:390px; height:844px }
+    .frame.desktop{ width:1440px; height:900px }
+
+    /* --- Site styles (same palette & layout as your site) --- */
+    :root{
+      --bg-site:#F6F7F8; --text:#111111; --brand:#2F6B3A; --brand-2:#89C27F;
+      --accent:#F2C94C; --dark:#1E1E1E; --muted:#6B7280; --radius:12px;
+    }
+    .app{ display:grid; grid-template-rows:auto 1fr auto; height:100% }
+    .container{max-width:1100px;margin-inline:auto;padding:0 1rem}
+    img{max-width:100%;display:block}
+
+    .site-header{background:var(--brand);color:#fff}
+    .header-inner{display:flex;align-items:center;gap:1rem;justify-content:space-between;padding:10px 0}
+    .site-title{font-size:clamp(1.2rem,2vw,1.6rem);margin:0}
+    .nav-toggle{ display:none;border:0;background:rgba(255,255,255,.15);color:#fff;padding:.4rem .6rem;border-radius:8px }
+    .site-nav{display:flex;align-items:center;gap:.75rem}
+    .site-nav a, .cart-button{
+      color:var(--accent); text-decoration:none; font-weight:700; padding:.5rem .6rem; border-radius:8px;
+      border:0; background:transparent; cursor:pointer
+    }
+    .site-nav a.active{outline:2px solid var(--accent)}
+    .cart-badge{ background:#fff; color:var(--brand); font-weight:700; padding:.1rem .4rem; border-radius:999px; margin-left:.25rem }
+
+    main{background:var(--bg-site); color:var(--text); overflow:auto}
+    .hero{ background:linear-gradient(180deg,var(--brand-2),#a6d8a0); color:#1E1E1E; padding:3rem 0; text-align:center }
+    .hero-title{font-size:clamp(1.6rem,3.2vw,2.4rem);margin:.2rem 0}
+    .hero-subtitle{color:#243B2E;margin:0 0 1rem}
+    .btn{ display:inline-block; background:var(--brand); color:#fff; border:0; padding:.6rem 1rem; border-radius:var(--radius); cursor:pointer }
+    .btn-accent{ background:var(--accent); color:#1E1E1E; font-weight:700 }
+    .btn.full{width:100%}
+
+    .section{padding:2rem 0}
+    .features{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.75rem}
+    .features li{background:#fff;border-radius:var(--radius);padding:1rem;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+    .inline-form{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center}
+    .inline-form input{flex:1 min(260px);min-width:220px}
+    input,textarea,select{
+      width:100%; padding:.6rem .7rem; border:1px solid #D1D5DB; border-radius:var(--radius); background:#fff
+    }
+    .field{margin-bottom:1rem}
+    .form-help{color:var(--muted)}
+    .form-msg{margin-top:.5rem;min-height:1.2rem}
+    .small{font-size:.875rem}
+    .muted{color:var(--muted)}
+
+    .grid{display:grid;gap:1rem}
+    .gallery-grid{grid-template-columns:repeat(auto-fit,minmax(240px,1fr));padding:1rem 0}
+    .card{background:#fff;border-radius:var(--radius);box-shadow:0 1px 2px rgba(0,0,0,.06);overflow:hidden;display:flex;flex-direction:column}
+    .card-body{padding:1rem;display:flex;flex-direction:column;gap:.5rem}
+    .card-title{margin:.2rem 0}
+    .price{font-weight:700}
+
+    .site-footer{background:var(--dark);color:#fff;text-align:center;padding:1rem}
+    .skip-link{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}
+    .skip-link:focus{left:1rem;top:1rem;width:auto;height:auto;background:#fff;padding:.4rem .6rem;border-radius:8px}
+
+    /* Modal cart */
+    .modal{position:fixed;inset:0;display:none}
+    .modal[aria-hidden="false"]{display:grid;place-items:center}
+    .modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.4)}
+    .modal-content{position:relative;background:#fff;z-index:1;width:min(720px,92vw);border-radius:16px;padding:1rem;max-height:85vh;overflow:auto}
+    .modal-close{position:absolute;top:.5rem;right:.5rem;border:0;background:#eee;border-radius:999px;width:32px;height:32px;cursor:pointer}
+    .cart-actions{display:flex;justify-content:flex-end;gap:.5rem;margin-top:1rem;flex-wrap:wrap}
+    .table{width:100%;border-collapse:collapse;margin-top:.5rem}
+    .table th,.table td{border-bottom:1px solid #E5E7EB;padding:.5rem;text-align:left}
+
+    .visually-hidden{
+      position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0
+    }
+
+    /* Mobile polish */
+    @media (max-width: 840px){
+      .nav-toggle{display:inline-block}
+      .site-nav{
+        position:absolute;right:1rem;top:64px;background:var(--brand);
+        padding:.5rem;border-radius:12px;flex-direction:column;align-items:flex-start;display:none
+      }
+      .site-nav.open{display:flex}
+    }
+    @media (max-width: 480px){
+      .container{padding:0 .85rem}
+      .btn{padding:.7rem 1rem;font-weight:700}
+      input,textarea,select{font-size:16px}
+      .gallery-grid{grid-template-columns:1fr}
+      .modal-content{width:94vw;padding:.85rem}
+      .table th,.table td{padding:.45rem}
+    }
+  </style>
+</head>
+<body>
+  <!-- Preview controls -->
+  <header class="bar">
+    <div class="inner">
+      <h1>GreenTrail — Mobile/Desktop Preview (All-in-One)</h1>
+      <nav class="tabs" aria-label="Screens">
+        <button class="btn active" data-screen="home">Home</button>
+        <button class="btn" data-screen="gallery">Gallery</button>
+        <button class="btn" data-screen="about">About/Contact</button>
+        <button class="btn" data-screen="services">Services/Quote</button>
+      </nav>
+      <div class="modes" aria-label="Device mode">
+        <button class="btn active" data-mode="mobile">Mobile 390×844</button>
+        <button class="btn" data-mode="desktop">Desktop 1440×900</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Device frame containing your full site content -->
+  <main class="stage">
+    <section id="frame" class="frame mobile" role="img" aria-label="Preview device">
+      <div class="app" id="app">
+        <a class="skip-link" href="#main">Skip to main content</a>
+
+        <!-- Header / Nav -->
+        <header class="site-header" role="banner">
+          <div class="container header-inner">
+            <h1 class="site-title">GreenTrail Landscaping</h1>
+            <button class="nav-toggle" aria-expanded="false" aria-controls="site-nav" aria-label="Toggle navigation">☰</button>
+            <nav id="site-nav" class="site-nav" role="navigation" aria-label="Primary">
+              <a href="#home" class="active" data-route>Home</a>
+              <a href="#gallery" data-route>Gallery</a>
+              <a href="#about" data-route>About &amp; Contact</a>
+              <a href="#services" data-route>Services &amp; Quote</a>
+              <button class="cart-button" data-open-cart aria-label="Open cart">
+                Cart <span class="cart-badge" data-cart-count>0</span>
+              </button>
+            </nav>
+          </div>
+        </header>
+
+        <!-- Main pages -->
+        <main id="main">
+          <!-- HOME -->
+          <section id="home" class="page">
+            <section class="hero">
+              <div class="container">
+                <h2 class="hero-title">Your yard has never looked this good</h2>
+                <p class="hero-subtitle">Professional landscaping across PG County, MD. Reliable crews, fresh designs.</p>
+                <p><a class="btn btn-accent" href="#services" data-route>Get a quote</a></p>
+              </div>
+            </section>
+
+            <section class="container section">
+              <h3>Subscribe for seasonal tips & promos</h3>
+              <form id="subscribe-form" class="inline-form" novalidate>
+                <label for="subscribe-email" class="visually-hidden">Email</label>
+                <input id="subscribe-email" name="email" type="email" placeholder="you@example.com" required autocomplete="email" inputmode="email" />
+                <button type="submit" class="btn">Subscribe</button>
+                <small id="subscribe-help" class="form-help">We’ll send 1–2 emails per season. Unsubscribe anytime.</small>
+                <div class="form-msg" aria-live="polite" data-subscribe-msg></div>
+              </form>
+            </section>
+
+            <section class="container section">
+              <h3>Why GreenTrail?</h3>
+              <ul class="features">
+                <li>Native-plant designs that thrive</li>
+                <li>Licensed & insured crews</li>
+                <li>Transparent quotes, no surprise fees</li>
+              </ul>
+            </section>
+          </section>
+
+          <!-- GALLERY -->
+          <section id="gallery" class="page" hidden>
+            <div class="container">
+              <h2 class="page-title">Project Gallery & Shop</h2>
+              <p class="muted">Browse examples and add services to your cart to price out a project.</p>
+
+              <div class="grid gallery-grid">
+                <article class="card">
+                  <img src="https://placehold.co/800x600/2F6B3A/FFFFFF?text=Lawn+Care" alt="Freshly cut lawn" />
+                  <div class="card-body">
+                    <h3 class="card-title">Weekly Lawn Care</h3>
+                    <p>Includes mowing, edging, and debris removal.</p>
+                    <p class="price" aria-label="Price">$49.00</p>
+                    <button class="btn full" data-add data-id="svc_lawn" data-name="Weekly Lawn Care" data-price="49">Add to Cart</button>
+                  </div>
+                </article>
+
+                <article class="card">
+                  <img src="https://placehold.co/800x600/89C27F/FFFFFF?text=Garden+Design" alt="Flower garden" />
+                  <div class="card-body">
+                    <h3 class="card-title">Garden Design</h3>
+                    <p>Custom layouts featuring native plants and sustainable irrigation.</p>
+                    <p class="price" aria-label="Price">$299.00</p>
+                    <button class="btn full" data-add data-id="svc_garden" data-name="Garden Design" data-price="299">Add to Cart</button>
+                  </div>
+                </article>
+
+                <article class="card">
+                  <img src="https://placehold.co/800x600/2F6B3A/FFFFFF?text=Patio+Install" alt="Stone patio" />
+                  <div class="card-body">
+                    <h3 class="card-title">Hardscape Install</h3>
+                    <p>Patios, walkways, retaining walls created with quality stone.</p>
+                    <p class="price" aria-label="Price">$899.00</p>
+                    <button class="btn full" data-add data-id="svc_hardscape" data-name="Hardscape Install" data-price="899">Add to Cart</button>
+                  </div>
+                </article>
+
+                <article class="card">
+                  <img src="https://placehold.co/800x600/2F6B3A/FFFFFF?text=Tree+Trimming" alt="Trimmed trees" />
+                  <div class="card-body">
+                    <h3 class="card-title">Tree Trimming</h3>
+                    <p>Safety-first pruning to promote long-term health.</p>
+                    <p class="price" aria-label="Price">$149.00</p>
+                    <button class="btn full" data-add data-id="svc_tree" data-name="Tree Trimming" data-price="149">Add to Cart</button>
+                  </div>
+                </article>
+              </div>
+            </div>
+          </section>
+
+          <!-- ABOUT -->
+          <section id="about" class="page" hidden>
+            <div class="container">
+              <section class="section">
+                <h2>Who We Are</h2>
+                <p>GreenTrail is a family-run crew greening Maryland yards since 2011. We blend science, sweat, and style to give clients outdoor spaces that pop.</p>
+              </section>
+
+              <section class="section">
+                <h2>Contact Us</h2>
+                <form id="contact-form" novalidate>
+                  <div class="field">
+                    <label for="name">Name</label>
+                    <input id="name" name="name" required />
+                  </div>
+                  <div class="field">
+                    <label for="email">Email</label>
+                    <input id="email" name="email" type="email" required autocomplete="email" inputmode="email" />
+                  </div>
+                  <div class="field">
+                    <label for="message">Message</label>
+                    <textarea id="message" name="message" rows="5" required></textarea>
+                  </div>
+                  <button type="submit" class="btn">Send</button>
+                  <div class="form-msg" aria-live="polite" data-contact-msg></div>
+                </form>
+                <div class="muted small" data-contact-status></div>
+              </section>
+            </div>
+          </section>
+
+          <!-- SERVICES -->
+          <section id="services" class="page" hidden>
+            <div class="container">
+              <section class="section">
+                <h2>Our Services</h2>
+                <ul class="service-list">
+                  <li><strong>Weekly Lawn Care</strong> — mowing, edging, debris removal.</li>
+                  <li><strong>Garden Design</strong> — native plants, sustainable irrigation.</li>
+                  <li><strong>Hardscape Install</strong> — patios, walkways, retaining walls.</li>
+                  <li><strong>Tree Trimming</strong> — safety-first pruning.</li>
+                </ul>
+              </section>
+
+              <section class="section">
+                <h2>Request a Quote</h2>
+                <form id="quote-form" class="stack" novalidate>
+                  <label for="service">Choose Service</label>
+                  <select id="service" name="service" required>
+                    <option value="">Select a service</option>
+                    <option>Weekly Lawn Care</option>
+                    <option>Garden Design</option>
+                    <option>Hardscape Install</option>
+                    <option>Tree Trimming</option>
+                  </select>
+
+                  <label for="area">Yard Size (sq ft)</label>
+                  <input type="number" id="area" name="area" min="50" step="1" required />
+
+                  <label for="details">Details</label>
+                  <textarea id="details" name="details" rows="4" placeholder="Any specifics we should know?"></textarea>
+
+                  <button type="submit" class="btn btn-accent">Submit</button>
+                  <div class="form-msg" aria-live="polite" data-quote-msg></div>
+                </form>
+              </section>
+            </div>
+          </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="site-footer">
+          <div class="container">
+            <p>&copy; <span id="year"></span> GreenTrail Landscaping LLC</p>
+          </div>
+        </footer>
+
+        <!-- Cart Modal -->
+        <div class="modal" data-cart-modal aria-hidden="true" role="dialog" aria-labelledby="cart-title">
+          <div class="modal-content" role="document">
+            <button class="modal-close" data-close-cart aria-label="Close cart">×</button>
+            <h2 id="cart-title">Your Cart</h2>
+            <div data-cart-list></div>
+            <div class="cart-actions">
+              <button class="btn" data-clear-cart>Clear Cart</button>
+              <button class="btn btn-accent" data-process-order>Process Order</button>
+            </div>
+            <div class="form-msg" aria-live="polite" data-cart-msg></div>
+          </div>
+          <div class="modal-backdrop" data-close-cart></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    /* ===== Preview controls (tabs + mobile/desktop toggle) ===== */
+    const tabs = [...document.querySelectorAll('.tabs .btn')];
+    const modes = [...document.querySelectorAll('.modes .btn')];
+    const frame = document.getElementById('frame');
+
+    function setScreen(name){
+      // Show selected page; hide others
+      document.querySelectorAll('.page').forEach(p => p.hidden = true);
+      const target = document.getElementById(name);
+      if (target) target.hidden = false;
+
+      // Update nav highlight inside site header
+      document.querySelectorAll('#site-nav a[data-route]').forEach(a => {
+        a.classList.toggle('active', a.getAttribute('href') === '#' + name);
+      });
+
+      // Highlight top control
+      tabs.forEach(b => b.classList.toggle('active', b.dataset.screen === name));
+      // Move hash for good measure (optional)
+      history.replaceState(null, '', '#' + name);
+    }
+    function setMode(mode){
+      frame.classList.toggle('mobile', mode === 'mobile');
+      frame.classList.toggle('desktop', mode === 'desktop');
+      modes.forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+    }
+    tabs.forEach(b => b.addEventListener('click', () => setScreen(b.dataset.screen)));
+    modes.forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
+
+    /* ===== Site behavior (same as your app.js, adapted to single file) ===== */
+    const qs  = (s, r = document) => r.querySelector(s);
+    const qsa = (s, r = document) => [...r.querySelectorAll(s)];
+    const byId = (id) => document.getElementById(id);
+
+    // Year
+    const yearEl = byId('year'); if (yearEl) yearEl.textContent = new Date().getFullYear();
+
+    // Mobile nav toggle
+    const navToggle = qs('.nav-toggle');
+    const siteNav   = qs('#site-nav');
+    if (navToggle && siteNav) {
+      navToggle.addEventListener('click', () => {
+        const open = siteNav.classList.toggle('open');
+        navToggle.setAttribute('aria-expanded', String(open));
+      });
+    }
+
+    // Hash routing for internal header links
+    qsa('#site-nav a[data-route]').forEach(a=>{
+      a.addEventListener('click', (e)=>{
+        e.preventDefault();
+        const id = a.getAttribute('href').replace('#','');
+        setScreen(id);
+      });
+    });
+
+    // Simple hash on load
+    const initial = location.hash?.replace('#','') || 'home';
+    setScreen(initial);
+    setMode('mobile'); // default
+
+    // Cart storage
+    const CART_KEY = 'gt_cart';
+    const getCart = () => {
+      try { return JSON.parse(sessionStorage.getItem(CART_KEY) || '[]'); }
+      catch { return []; }
+    };
+    const setCart = (items) => sessionStorage.setItem(CART_KEY, JSON.stringify(items));
+
+    // Cart UI refs
+    const cartModal = qs('[data-cart-modal]');
+    const cartCount = qs('[data-cart-count]');
+    const cartList  = qs('[data-cart-list]');
+
+    const updateBadge = () => {
+      const count = getCart().reduce((n, i) => n + i.qty, 0);
+      if (cartCount) cartCount.textContent = String(count);
+    };
+
+    const renderCart = () => {
+      const items = getCart();
+      if (!cartList) return;
+      if (!items.length) { cartList.innerHTML = '<p class="muted">Your cart is empty.</p>'; return; }
+      const rows = items.map(i => `
+        <tr>
+          <td>${i.name}</td>
+          <td>$${i.price.toFixed(2)}</td>
+          <td>
+            <button class="btn" data-dec="${i.id}" title="Decrease quantity">−</button>
+            <span aria-label="quantity"> ${i.qty} </span>
+            <button class="btn" data-inc="${i.id}" title="Increase quantity">+</button>
+          </td>
+          <td>$${(i.price * i.qty).toFixed(2)}</td>
+          <td><button class="btn" data-rem="${i.id}" title="Remove">Remove</button></td>
+        </tr>`).join('');
+      const total = items.reduce((sum, i) => sum + i.price * i.qty, 0);
+      cartList.innerHTML = `
+        <table class="table" aria-label="Cart items">
+          <thead><tr><th>Item</th><th>Price</th><th>Qty</th><th>Subtotal</th><th></th></tr></thead>
+          <tbody>${rows}</tbody>
+          <tfoot><tr><th colspan="3" style="text-align:right">Total</th><th>$${total.toFixed(2)}</th><th></th></tr></tfoot>
+        </table>
+      `;
+    };
+
+    const openCart = () => { if (!cartModal) return; renderCart(); cartModal.setAttribute('aria-hidden', 'false'); qs('.modal-close', cartModal)?.focus(); };
+    const closeCart = () => cartModal?.setAttribute('aria-hidden', 'true');
+
+    qsa('[data-open-cart]').forEach(btn => btn.addEventListener('click', openCart));
+    qsa('[data-close-cart]').forEach(el => el.addEventListener('click', closeCart));
+
+    if (cartModal) {
+      cartModal.addEventListener('click', (e) => {
+        const t = e.target;
+        if (!(t instanceof HTMLElement)) return;
+
+        if (t.hasAttribute('data-clear-cart')) {
+          setCart([]); renderCart(); updateBadge(); alert('Cart cleared.');
+        }
+        if (t.hasAttribute('data-process-order')) {
+          const items = getCart();
+          if (!items.length) { alert('Cart is empty. Add items before processing.'); return; }
+          if (sessionStorage.getItem('gt_order_processed') === '1') { alert('Order already processed in this session.'); return; }
+          sessionStorage.setItem('gt_cart_snapshot', JSON.stringify(items));
+          sessionStorage.setItem('gt_order_processed', '1');
+          alert('Order processed! We will follow up via email.');
+          setCart([]); renderCart(); updateBadge();
+        }
+        if (t.dataset.inc) {
+          const id = t.dataset.inc;
+          const items = getCart().map(i => i.id === id ? ({ ...i, qty: i.qty + 1 }) : i);
+          setCart(items); renderCart(); updateBadge();
+        }
+        if (t.dataset.dec) {
+          const id = t.dataset.dec;
+          const items = getCart().map(i => i.id === id ? ({ ...i, qty: Math.max(1, i.qty - 1) }) : i);
+          setCart(items); renderCart(); updateBadge();
+        }
+        if (t.dataset.rem) {
+          const id = t.dataset.rem;
+          const items = getCart().filter(i => i.id !== id);
+          setCart(items); renderCart(); updateBadge();
+        }
+      });
+    }
+
+    // Add-to-cart buttons
+    qsa('[data-add]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id    = btn.getAttribute('data-id');
+        const name  = btn.getAttribute('data-name');
+        const price = Number(btn.getAttribute('data-price') || '0');
+        if (!id || !name || !price) return;
+
+        const items = getCart();
+        const idx = items.findIndex(i => i.id === id);
+        if (idx >= 0) items[idx].qty += 1;
+        else items.push({ id, name, price, qty: 1 });
+        setCart(items); updateBadge();
+        alert(`Added "${name}" to cart.`);
+      });
+    });
+
+    // Subscribe
+    const subForm = byId('subscribe-form');
+    if (subForm) {
+      subForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const email = (byId('subscribe-email')?.value || '').trim();
+        const msgEl = qs('[data-subscribe-msg]');
+        const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        if (!ok) { if (msgEl) msgEl.textContent = 'Please enter a valid email.'; return; }
+        localStorage.setItem('gt_subscriber_email', email);
+        if (msgEl) msgEl.textContent = 'Subscribed! Check your inbox for a welcome email.';
+        subForm.reset();
+      });
+    }
+
+    // Contact
+    const contactForm = byId('contact-form');
+    if (contactForm) {
+      const statusEl = qs('[data-contact-status]');
+      const last = localStorage.getItem('gt_contact_last');
+      if (last && statusEl) {
+        const data = JSON.parse(last);
+        statusEl.textContent = `Last submission saved on ${new Date(data.when).toLocaleString()}`;
+      }
+      contactForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name = (byId('name')?.value || '').trim();
+        const email = (byId('email')?.value || '').trim();
+        const message = (byId('message')?.value || '').trim();
+        const msgEl = qs('[data-contact-msg]');
+
+        if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !message) {
+          if (msgEl) msgEl.textContent = 'Please complete all fields with a valid email.';
+          return;
+        }
+        const payload = { name, email, message, when: new Date().toISOString() };
+        localStorage.setItem('gt_contact_last', JSON.stringify(payload));
+        if (msgEl) msgEl.textContent = 'Thanks! We received your message.';
+        contactForm.reset();
+        if (statusEl) statusEl.textContent = `Last submission saved on ${new Date(payload.when).toLocaleString()}`;
+      });
+    }
+
+    // Quote
+    const quoteForm = byId('quote-form');
+    if (quoteForm) {
+      quoteForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const service = (byId('service')?.value || '').trim();
+        const area = Number(byId('area')?.value || '0');
+        const msgEl = qs('[data-quote-msg]');
+        if (!service || !area || area < 50) {
+          if (msgEl) msgEl.textContent = 'Pick a service and enter a yard size ≥ 50 sq ft.';
+          return;
+        }
+        if (msgEl) msgEl.textContent = 'Quote requested! We will email you within 1–2 business days.';
+        quoteForm.reset();
+      });
+    }
+
+    updateBadge();
+  </script>
+</body>
+</html>
